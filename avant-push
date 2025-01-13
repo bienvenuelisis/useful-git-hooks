@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# An example hook script to verify what is about to be pushed.  Called by "git
+# push" after it has checked the remote status, but before anything has been
+# pushed.  If this script exits with a non-zero status nothing will be pushed.
+#
+# This hook is called with the following parameters:
+#
+# $1 -- Name of the remote to which the push is being done
+# $2 -- URL to which the push is being done
+#
+# If pushing without using a named remote those arguments will be equal.
+#
+# Information about the commits which are being pushed is supplied as lines to
+# the standard input in the form:
+#
+#   <local ref> <local oid> <remote ref> <remote oid>
+#
+# This sample shows how to prevent push of commits where the log message starts
+# with "WIP" (work in progress).
+
+protected_branch='release'
+
+policy="\n\n[Violation] Ne faites jamais de push direct sur la branche "$protected_branch"! \n\n"
+
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+do_exit(){
+  echo -e $policy
+  exit 1
+}
+
+if [ $current_branch = $protected_branch ]; then
+  do_exit
+fi
+
+unset do_exit
+
+BRANCH=`git rev-parse --abbrev-ref HEAD`
+PROTECTED_BRANCHES="^(main|release-[0-9]+)"
+
+if [[ "$BRANCH" =~ $PROTECTED_BRANCHES ]]; then
+  read -p "Êtes vous sure de vouloir pusher sur la branche \"$BRANCH\" ? (y/n): " -n 1 -r < /dev/tty
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    exit 0
+  fi
+  echo "Push avorté."
+  exit 1
+fi
+exit 0
+
+exit 0
